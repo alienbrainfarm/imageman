@@ -34,20 +34,7 @@
 - Supported image formats
 - Update README and PRD
 
-## 8. Completed Features
-- **Thumbnail Display:**
-  - Integrated thumbnail view directly into the main window.
-  - Implemented drag-and-drop reordering with immediate renaming of affected files.
-  - Thumbnails no longer display filenames.
-  - Added a scrollbar for navigation.
-- **Immediate Directory Rename:**
-  - Implemented menu option to rename all images in the current directory to `directory-name_sequence-number.extension`.
-- **Remember Last Directory:**
-  - Application now saves and loads the last used directory.
-- **Slideshow:**
-  - Implemented slideshow functionality with configurable duration.
-  - Spacebar toggles start/stop/resume.
-  - Image manipulation keys (delete, rename, move to tag) work during slideshow.
+
 
 ## 9. Code Refactoring
 - Separated UI components (widgets, dialogs) into dedicated files (`widgets.py`, `dialogs.py`).

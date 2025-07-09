@@ -21,13 +21,30 @@ A fast, keyboard-driven Windows image viewer for efficiently managing images in 
 - Error handling and confirmations
 
 ## Implemented Features
-- **Thumbnail View:** Integrated into the main window, allowing drag-and-drop reordering of images. Renaming occurs immediately upon reordering, using the `directory-name_sequence-number.extension` format. Thumbnails do not display filenames, and the view includes a scrollbar.
-- **Rename All Images:** Added an option to rename all images in the current directory to `directory-name_sequence-number.extension`.
-- **Remember Last Directory:** The application now automatically opens the last used directory on startup if no directory is specified.
-
-## Further Refinements
-- In the thumbnails view ~I would like to be able to use the keys 1-5 and opt-1-5 and 'd' to act on the 'selected' image in the same way as they work for the main view. Pressing "Enter" or clicking with the mouse should open the selected image in the single image view.
-- **Slideshow Option:** Implemented. Duration configurable via settings. Spacebar toggles start/stop/resume. Image manipulation keys (e.g., 'd') function during slideshow.
+- **Thumbnail View:**
+  - Integrated thumbnail view directly into the main window.
+  - Implemented drag-and-drop reordering with immediate renaming of affected files.
+  - Thumbnails no longer display filenames.
+  - Added a scrollbar for navigation.
+  - **Double-Click to View:** Double-clicking an image in the thumbnail view now opens it in the single-image view.
+  - **Keyboard Actions:**
+      - Press `d` to delete the selected image.
+      - Press `1-5` to rename the selected image with a pre-programmed tag.
+      - Press `Ctrl/Alt + 1-5` to move and rename the selected image into a subdirectory named after the tag.
+  - **Automatic Selection:** After deleting or moving an image in thumbnail view, the next available image is automatically selected.
+- **Immediate Directory Rename:**
+  - Implemented menu option to rename all images in the current directory to `directory-name_sequence-number.extension`.
+- **Remember Last Directory:**
+  - Application now saves and loads the last used directory.
+- **Slideshow Functionality:**
+  - Implemented slideshow functionality with configurable duration.
+  - Spacebar toggles start/stop/resume.
+  - Image manipulation keys (delete, rename, move to tag) work during slideshow.
+  - **Toggle Slideshow:** Press the `Spacebar` to start, pause, or resume the slideshow.
+- **Single Image View Navigation:**
+  - **Arrow Key Navigation:** Use the left and right arrow keys to navigate between images.
+- **Configuration:**
+  - **Configure Tags:** Access the "Configure Tags" dialog from the "Config" menu to customize your tags and slideshow duration.
   
 ---
 *Refine this document as requirements evolve.*
