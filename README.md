@@ -17,11 +17,7 @@ There are no questions asked here ESC will kill the program immediatly and "d" w
 
 ## Installation
 
-First run build_portable.bat to build a portable executable.
-
-You can build an installer yourself by running NSIS with the provided imageman_installer.nsi file.
-
- see: https://nsis.sourceforge.io/Main_Page
+Download and run the installer: [ImageManSetup.exe](ImageManSetup.exe)
 
 The installer will:
 - Install ImageMan to your Program Files.
@@ -29,6 +25,25 @@ The installer will:
 - Add an 'Open with ImageMan' option to the right-click menu for folders.
 
 Once installed, you can launch ImageMan from the Start Menu, Desktop, or by right-clicking any folder and choosing 'Open with ImageMan'.
+
+## New Features & Fixes
+
+### Thumbnail View Enhancements
+- **Double-Click to View:** Double-clicking an image in the thumbnail view now opens it in the single-image view.
+- **Keyboard Actions:**
+    - Press `d` to delete the selected image.
+    - Press `1-5` to rename the selected image with a pre-programmed tag.
+    - Press `Ctrl/Alt + 1-5` to move and rename the selected image into a subdirectory named after the tag.
+- **Automatic Selection:** After deleting or moving an image in thumbnail view, the next available image is automatically selected.
+
+### Single Image View Navigation
+- **Arrow Key Navigation:** Use the left and right arrow keys to navigate between images.
+
+### Slideshow Functionality
+- **Toggle Slideshow:** Press the `Spacebar` to start, pause, or resume the slideshow.
+
+### Configuration
+- **Configure Tags:** Access the "Configure Tags" dialog from the "Config" menu to customize your tags and slideshow duration.
 
 ## Documentation
 See `docs/PRD.md` for the evolving product requirements.

@@ -5,10 +5,6 @@ import pytest
 from imageman.main import ImageMan
 from PyQt5.QtWidgets import QApplication
 
-@pytest.fixture(scope="module")
-def app():
-    app = QApplication([])
-    yield app
 
 @pytest.fixture
 def temp_image_dir(tmp_path):
@@ -19,8 +15,10 @@ def temp_image_dir(tmp_path):
         (img_dir / f"img{i}.jpg").write_bytes(b"fake image data")
     return str(img_dir)
 
-def test_move_to_tag_creates_dir_and_moves_file(app, temp_image_dir):
+
+def test_move_to_tag_creates_dir_and_moves_file(qtbot, temp_image_dir):
     man = ImageMan(temp_image_dir)
+    qtbot.addWidget(man)
     # Set tags to known values
     man.tags = ["cat", "dog", "bird", "fish", "horse"]
     man.images = man._get_images()
@@ -36,8 +34,10 @@ def test_move_to_tag_creates_dir_and_moves_file(app, temp_image_dir):
     # The image should be gone from the main dir
     assert img_name not in os.listdir(temp_image_dir)
 
-def test_move_to_tag_sequence_increment(app, temp_image_dir):
+
+def test_move_to_tag_sequence_increment(qtbot, temp_image_dir):
     man = ImageMan(temp_image_dir)
+    qtbot.addWidget(man)
     man.tags = ["cat", "dog", "bird", "fish", "horse"]
     man.images = man._get_images()
     # Move all images to tag 1 ("dog")
