@@ -1,12 +1,17 @@
 import os
 import winreg
+import tempfile
+import shutil
 from PyQt5.QtWidgets import (
     QMainWindow, QLabel, QMenuBar, QAction, QDialog,
     QVBoxLayout, QLineEdit, QPushButton, QMessageBox, QWidget, QFileDialog,
-    QListWidget, QListWidgetItem, QScrollArea, QApplication
+    QListWidget, QListWidgetItem, QScrollArea, QApplication, QInputDialog
 )
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtCore import Qt, QSize, QTimer
+
+from PIL import Image, ImageDraw
+from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 
 from imageman.widgets import ImageLabel, DragDropListWidget
 from imageman.dialogs import TagConfigDialog
@@ -21,6 +26,7 @@ class ImageMan(QMainWindow):
         self._add_to_recent_dirs(self.image_dir)
         self.images = self._get_images()
         self.current_index = 0
+        self.show_filenames = self._load_show_filenames_from_registry()
         self.filename_label = QLabel(self)
         self.filename_label.setAlignment(Qt.AlignCenter)
         font = self.filename_label.font()
@@ -29,6 +35,7 @@ class ImageMan(QMainWindow):
         self.filename_label.setFont(font)
         self.filename_label.setStyleSheet("padding: 2px 0 2px 0; margin: 0px;")
         self.filename_label.setMinimumSize(0, 0)
+        self.filename_label.setVisible(self.show_filenames)
         self.label = ImageLabel(self)
         self.label.setMinimumSize(0, 0)
 
@@ -220,15 +227,33 @@ class ImageMan(QMainWindow):
         except Exception:
             pass
 
+    def _load_show_filenames_from_registry(self):
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\\ImageMan", 0, winreg.KEY_READ) as key:
+                show_filenames_str, _ = winreg.QueryValueEx(key, "show_filenames")
+                return show_filenames_str == "True"
+        except Exception:
+            pass
+        return True  # Default to showing filenames
+
+    def _save_show_filenames_to_registry(self):
+        try:
+            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, r"Software\\ImageMan") as key:
+                winreg.SetValueEx(key, "show_filenames", 0, winreg.REG_SZ, str(self.show_filenames))
+        except Exception:
+            pass
+
     def _show_image(self):
         if not self.images:
             QMessageBox.information(self, 'No Images', 'No images found in this directory.')
             self.filename_label.setText('')
             self.label.clear() # Clear any previous image
+            self.filename_label.setVisible(self.show_filenames)
             return
         img_name = self.images[self.current_index]
         img_path = os.path.join(self.image_dir, img_name)
         self.filename_label.setText(img_name)
+        self.filename_label.setVisible(self.show_filenames)
         pixmap = QPixmap(img_path)
         if pixmap.isNull():
             QMessageBox.warning(self, 'Image Load Error', f'Cannot load image: {img_name}. It might be corrupted or an unsupported format.')
@@ -326,6 +351,10 @@ class ImageMan(QMainWindow):
         rename_all_action.triggered.connect(self._rename_all_images)
         file_menu.addAction(rename_all_action)
 
+        create_video_action = QAction('Create Slideshow Video...', self)
+        create_video_action.triggered.connect(self._create_slideshow_video)
+        file_menu.addAction(create_video_action)
+
         exit_action = QAction('Exit', self)
         exit_action.triggered.connect(QApplication.quit)
         file_menu.addAction(exit_action)
@@ -340,6 +369,12 @@ class ImageMan(QMainWindow):
         tag_action = QAction('Configure Tags', self)
         tag_action.triggered.connect(self._show_tag_dialog)
         config_menu.addAction(tag_action)
+
+        self.show_filenames_action = QAction('Show Filenames', self)
+        self.show_filenames_action.setCheckable(True)
+        self.show_filenames_action.setChecked(self.show_filenames)
+        self.show_filenames_action.triggered.connect(self._toggle_filename_display)
+        config_menu.addAction(self.show_filenames_action)
 
     def _get_rename_map(self):
         rename_map = {}
@@ -522,6 +557,10 @@ class ImageMan(QMainWindow):
             icon_path = os.path.join(self.image_dir, image_name)
             item.setIcon(QIcon(icon_path))
             item.setData(Qt.UserRole, image_name)
+            if self.show_filenames:
+                item.setText(image_name)
+            else:
+                item.setText("")
             self.thumbnail_list_widget.addItem(item)
 
     def _thumbnail_double_clicked(self, item):
@@ -673,3 +712,101 @@ class ImageMan(QMainWindow):
             self.stop_slideshow()
         else:
             self.start_slideshow()
+
+    def _toggle_filename_display(self, checked):
+        self.show_filenames = checked
+        self._save_show_filenames_to_registry()
+        self._refresh_display()
+
+    def _refresh_display(self):
+        if self.thumbnail_view_active:
+            self._update_thumbnail_view()
+        else:
+            self._show_image()
+
+    def _create_slideshow_video(self):
+        if not self.images:
+            QMessageBox.information(self, "No Images", "No images found in the current directory to create a slideshow.")
+            return
+
+        # 1. Get minimum video length from user
+        min_length_minutes, ok = QInputDialog.getInt(
+            self,
+            "Slideshow Video Length",
+            "Enter minimum video length in minutes:",
+            value=1, min=1, max=60
+        )
+        if not ok:
+            return
+
+        min_length_seconds = min_length_minutes * 60
+
+        # 2. Create temporary directory for processed images
+        temp_dir = os.path.join(self.image_dir, "_temp_slideshow_images")
+        os.makedirs(temp_dir, exist_ok=True)
+
+        processed_image_paths = []
+        target_width, target_height = 1920, 1080
+
+        try:
+            QMessageBox.information(self, "Processing Images", "Resizing and processing images for video. This may take a moment...")
+            for i, image_name in enumerate(self.images):
+                original_path = os.path.join(self.image_dir, image_name)
+                try:
+                    img = Image.open(original_path)
+                except Exception as e:
+                    QMessageBox.warning(self, "Image Error", f"Could not open image {image_name}: {e}")
+                    continue
+
+                # Calculate aspect ratio and resize
+                original_width, original_height = img.size
+                aspect_ratio = original_width / original_height
+                target_aspect_ratio = target_width / target_height
+
+                if aspect_ratio > target_aspect_ratio:
+                    # Image is wider than target, fit to width
+                    new_width = target_width
+                    new_height = int(new_width / aspect_ratio)
+                else:
+                    # Image is taller or same aspect ratio, fit to height
+                    new_height = target_height
+                    new_width = int(new_height * aspect_ratio)
+
+                resized_img = img.resize((new_width, new_height), Image.LANCZOS)
+
+                # Create black background and paste resized image
+                new_image = Image.new("RGB", (target_width, target_height), (0, 0, 0)) # Black background
+                paste_x = (target_width - new_width) // 2
+                paste_y = (target_height - new_height) // 2
+                new_image.paste(resized_img, (paste_x, paste_y))
+
+                processed_path = os.path.join(temp_dir, f"processed_{i:04d}.png")
+                new_image.save(processed_path)
+                processed_image_paths.append(processed_path)
+
+            if not processed_image_paths:
+                QMessageBox.warning(self, "No Images Processed", "No valid images were processed for the slideshow.")
+                return
+
+            # 3. Calculate video duration and loop count
+            single_pass_duration = len(processed_image_paths) * self.slideshow_duration
+            loop_count = max(1, int(min_length_seconds / single_pass_duration) + 1)
+
+            final_clip_images = []
+            for _ in range(loop_count):
+                final_clip_images.extend(processed_image_paths)
+
+            # 4. Create video using moviepy
+            QMessageBox.information(self, "Creating Video", "Generating MP4 video. This may take some time...")
+            clip = ImageSequenceClip(final_clip_images, fps=1/self.slideshow_duration)
+            output_video_path = os.path.join(self.image_dir, "slideshow.mp4")
+            clip.write_videofile(output_video_path, codec="libx264", audio_codec="aac", fps=24) # Using 24 fps for smooth video
+
+            QMessageBox.information(self, "Video Created", f"Slideshow video created successfully at: {output_video_path}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Video Creation Error", f"An error occurred during video creation: {e}")
+        finally:
+            # 5. Clean up temporary directory
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)

@@ -3,3 +3,5 @@ pytest
 pytest-qt
 PyInstaller
 pytest-timeout
+Pillow
+moviepy

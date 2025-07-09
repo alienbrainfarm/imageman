@@ -2,6 +2,12 @@ import sys
 import os
 import winreg
 from PyQt5.QtWidgets import QApplication
+
+script_dir = os.path.dirname(__file__)
+project_root = os.path.abspath(os.path.join(script_dir, '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from imageman.image_man_window import ImageMan
 
 
