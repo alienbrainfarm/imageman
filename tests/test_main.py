@@ -5,12 +5,14 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QKeyEvent
 import sys
 
+from conftest import create_dummy_image
+
 
 def test_get_images(tmp_path, qtbot):
     # Create dummy images
     img_names = ['a.jpg', 'b.png', 'c.txt']
     for name in img_names:
-        (tmp_path / name).write_bytes(b'\x00')
+        create_dummy_image(tmp_path / name)
     viewer = ImageMan(str(tmp_path))
     qtbot.addWidget(viewer)
     assert set(viewer.images) == {'a.jpg', 'b.png'}
@@ -21,7 +23,7 @@ def test_delete_image(tmp_path, qtbot):
     # Create dummy images
     img_names = ['a.jpg', 'b.png']
     for name in img_names:
-        (tmp_path / name).write_bytes(b'\x00')
+        create_dummy_image(tmp_path / name)
     viewer = ImageMan(str(tmp_path))
     qtbot.addWidget(viewer)
     assert len(viewer.images) == 2
@@ -40,7 +42,7 @@ def test_delete_image(tmp_path, qtbot):
 def test_rename_image(tmp_path, qtbot):
     img_names = ['a.jpg', 'b.png']
     for name in img_names:
-        (tmp_path / name).write_bytes(b'\x00')
+        create_dummy_image(tmp_path / name)
     viewer = ImageMan(str(tmp_path))
     qtbot.addWidget(viewer)
     # Explicitly set tags to default to make test independent of registry
@@ -57,7 +59,7 @@ def test_rename_image(tmp_path, qtbot):
 
 def test_zoom_logic(tmp_path, qtbot):
     img_name = 'a.jpg'
-    (tmp_path / img_name).write_bytes(b'\x00')
+    create_dummy_image(tmp_path / img_name)
     viewer = ImageMan(str(tmp_path))
     qtbot.addWidget(viewer)
     orig_zoom = viewer.zoom_factor
@@ -77,7 +79,7 @@ def test_tag_configuration(tmp_path, qtbot):
     viewer.tag_counters = {tag: 1 for tag in new_tags}
     # Simulate pressing key '2' to rename to dog_1
     img_name = 'a.jpg'
-    (tmp_path / img_name).write_bytes(b'\x00')
+    create_dummy_image(tmp_path / img_name)
     viewer.images = [img_name]
     viewer.current_index = 0
     viewer.rename_current_image('dog')

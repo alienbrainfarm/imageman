@@ -10,6 +10,7 @@ from PyQt5.QtCore import Qt, QSize, QTimer
 
 from imageman.widgets import ImageLabel, DragDropListWidget
 from imageman.dialogs import TagConfigDialog
+from imageman.constants import *
 
 
 class ImageMan(QMainWindow):
@@ -61,15 +62,17 @@ class ImageMan(QMainWindow):
             pixmap = QPixmap(img_path)
             if not pixmap.isNull():
                 img_w, img_h = pixmap.width(), pixmap.height()
-                label_h = 32
-                self._initial_win_width = img_w + 20
-                self._initial_win_height = img_h + label_h + 20
+                label_h = FILENAME_LABEL_HEIGHT
+                self._initial_win_width = img_w + WINDOW_MARGIN
+                self._initial_win_height = img_h + label_h + WINDOW_MARGIN
                 self.resize(self._initial_win_width, self._initial_win_height)
         else:
             self.resize(800, 600)
 
         self.setMinimumSize(0, 0)
-        self._show_image()
+        # Always start in thumbnail view, and handle rename prompt
+        self.thumbnail_view_action.setChecked(True)
+        self._toggle_thumbnail_view(True) # This will call _update_thumbnail_view
         self.show()
 
     def _load_recent_dirs_from_registry(self):
@@ -95,7 +98,7 @@ class ImageMan(QMainWindow):
         if dir_path in self.recent_dirs:
             self.recent_dirs.remove(dir_path)
         self.recent_dirs.insert(0, dir_path)
-        self.recent_dirs = self.recent_dirs[:5]
+        self.recent_dirs = self.recent_dirs[:RECENT_DIRS_LIMIT]
         self._save_recent_dirs_to_registry()
         self._update_recent_dirs_menu()
 
@@ -121,9 +124,9 @@ class ImageMan(QMainWindow):
                 pixmap = QPixmap(img_path)
                 if not pixmap.isNull():
                     img_w, img_h = pixmap.width(), pixmap.height()
-                    label_h = 32
-                    self._initial_win_width = img_w + 20
-                    self._initial_win_height = img_h + label_h + 20
+                    label_h = FILENAME_LABEL_HEIGHT
+                    self._initial_win_width = img_w + WINDOW_MARGIN
+                    self._initial_win_height = img_h + label_h + WINDOW_MARGIN
                     self.resize(self._initial_win_width, self._initial_win_height)
             else:
                 self.resize(800, 600)
@@ -145,7 +148,7 @@ class ImageMan(QMainWindow):
             if not os.path.isdir(tag_dir):
                 os.makedirs(tag_dir)
         except Exception as e:
-            self.label.setText(f'Error creating directory: {e}')
+            QMessageBox.warning(self, 'Error', f'Error creating directory: {e}')
             return
         existing = [f for f in os.listdir(tag_dir) if f.lower().endswith(ext.lower()) and f.startswith(tag + '_')]
         max_seq = 0
@@ -168,7 +171,7 @@ class ImageMan(QMainWindow):
         try:
             os.rename(old_path, new_path)
         except Exception as e:
-            self.label.setText(f'Error moving image: {e}')
+            QMessageBox.warning(self, 'Error', f'Error moving image: {e}')
             return
         del self.images[self.current_index]
         if self.current_index >= len(self.images):
@@ -187,7 +190,7 @@ class ImageMan(QMainWindow):
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\\ImageMan", 0, winreg.KEY_READ) as key:
                 tags_str, _ = winreg.QueryValueEx(key, "tags")
                 tags = tags_str.split(';')
-                if len(tags) == 5:
+                if len(tags) == NUM_TAGS:
                     return tags
         except Exception:
             pass
@@ -208,7 +211,7 @@ class ImageMan(QMainWindow):
                 return float(duration)
         except Exception:
             pass
-        return 3.0 # Default duration
+        return DEFAULT_SLIDESHOW_DURATION # Default duration
 
     def _save_slideshow_duration_to_registry(self):
         try:
@@ -219,21 +222,23 @@ class ImageMan(QMainWindow):
 
     def _show_image(self):
         if not self.images:
-            self.label.setText('No images found.')
+            QMessageBox.information(self, 'No Images', 'No images found in this directory.')
             self.filename_label.setText('')
+            self.label.clear() # Clear any previous image
             return
         img_name = self.images[self.current_index]
         img_path = os.path.join(self.image_dir, img_name)
         self.filename_label.setText(img_name)
         pixmap = QPixmap(img_path)
         if pixmap.isNull():
-            self.label.setText('Cannot load image.')
+            QMessageBox.warning(self, 'Image Load Error', f'Cannot load image: {img_name}. It might be corrupted or an unsupported format.')
+            self.label.clear() # Clear any previous image
             return
         img_w, img_h = pixmap.width(), pixmap.height()
         scaled_w = int(img_w * self.zoom_factor)
         scaled_h = int(img_h * self.zoom_factor)
         available_w = max(1, self.centralWidget().width() - 20)
-        available_h = max(1, self.centralWidget().height() - 52)
+        available_h = max(1, self.centralWidget().height() - AVAILABLE_HEIGHT_OFFSET)
         if scaled_w > available_w or scaled_h > available_h:
             ratio = min(available_w / scaled_w, available_h / scaled_h, 1.0)
             scaled_w = int(scaled_w * ratio)
@@ -242,7 +247,7 @@ class ImageMan(QMainWindow):
         self.label.setPixmap(scaled_pixmap)
 
     def _get_images(self):
-        supported = ('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tif', '.tiff')
+        supported = SUPPORTED_IMAGE_FORMATS
         images = sorted([f for f in os.listdir(self.image_dir) if f.lower().endswith(supported)])
         
         return images
@@ -254,7 +259,7 @@ class ImageMan(QMainWindow):
         try:
             os.remove(img_path)
         except Exception as e:
-            self.label.setText(f'Error deleting image: {e}')
+            QMessageBox.warning(self, 'Error', f'Error deleting image: {e}')
             return
         del self.images[self.current_index]
         if self.current_index >= len(self.images):
@@ -277,7 +282,7 @@ class ImageMan(QMainWindow):
         try:
             os.rename(old_path, new_path)
         except Exception as e:
-            self.label.setText(f'Error renaming image: {e}')
+            QMessageBox.warning(self, 'Error', f'Error renaming image: {e}')
             return
         self.images[self.current_index] = new_name
         self.tag_counters[tag] = seq + 1
@@ -336,6 +341,27 @@ class ImageMan(QMainWindow):
         tag_action.triggered.connect(self._show_tag_dialog)
         config_menu.addAction(tag_action)
 
+    def _get_rename_map(self):
+        rename_map = {}
+        if not self.images:
+            return rename_map
+
+        dir_name = os.path.basename(os.path.abspath(self.image_dir))
+        
+        # Get the current order of images
+        current_images_order = self._get_images() # This will get the actual files on disk sorted
+
+        # Compare with the desired order (dir_name_0001.ext, dir_name_0002.ext, ...)
+        for i, old_name in enumerate(current_images_order):
+            ext = os.path.splitext(old_name)[1]
+            new_name = f"{dir_name}_{i+1:04d}{ext}"
+            old_path = os.path.join(self.image_dir, old_name)
+            new_path = os.path.join(self.image_dir, new_name)
+            
+            if old_path.lower() != new_path.lower():
+                rename_map[old_path] = new_path
+        return rename_map
+
     def _perform_rename(self, rename_map):
         try:
             temp_files = {}
@@ -354,33 +380,29 @@ class ImageMan(QMainWindow):
             QMessageBox.warning(self, 'Error', f'An error occurred: {e}')
 
     def _rename_all_images(self, confirm=True):
-        if not self.images:
-            return
+        rename_map = self._get_rename_map()
+        if not rename_map: # No renaming needed
+            return True # Indicate success (no rename was needed)
 
         dir_name = os.path.basename(os.path.abspath(self.image_dir))
         
         if confirm:
             reply = QMessageBox.question(self, 'Rename All',
-                                         f"Rename all images to \"{dir_name}_N.ext\"?",
+                                         f"Rename all images to \"{dir_name}_N.ext\"",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.No:
-                return
+                # User declined rename, switch to single image view
+                self.thumbnail_view_action.setChecked(False)
+                self._toggle_thumbnail_view(False)
+                return False # Indicate rename was declined
 
-        rename_map = {}
-        for i, old_name in enumerate(self.images):
-            ext = os.path.splitext(old_name)[1]
-            new_name = f"{dir_name}_{i+1:04d}{ext}"
-            old_path = os.path.join(self.image_dir, old_name)
-            new_path = os.path.join(self.image_dir, new_name)
-            if old_path.lower() != new_path.lower():
-                rename_map[old_path] = new_path
-        
         self._perform_rename(rename_map)
 
         self.images = self._get_images()
         self.current_index = 0
         if not self.thumbnail_view_active:
             self._show_image()
+        return True # Indicate rename was performed
 
     def _select_directory(self):
         dir_path = QFileDialog.getExistingDirectory(self, 'Select Image Directory', self.image_dir)
@@ -397,13 +419,15 @@ class ImageMan(QMainWindow):
                 pixmap = QPixmap(img_path)
                 if not pixmap.isNull():
                     img_w, img_h = pixmap.width(), pixmap.height()
-                    label_h = 32
-                    self._initial_win_width = img_w + 20
-                    self._initial_win_height = img_h + label_h + 20
+                    label_h = FILENAME_LABEL_HEIGHT
+                    self._initial_win_width = img_w + WINDOW_MARGIN
+                    self._initial_win_height = img_h + label_h + WINDOW_MARGIN
                     self.resize(self._initial_win_width, self._initial_win_height)
             else:
                 self.resize(800, 600)
-            self._show_image()
+            # Always go to thumbnail view after selecting a directory
+            self.thumbnail_view_action.setChecked(True)
+            self._toggle_thumbnail_view(True)
 
     def _apply_dark_theme(self):
         dark_stylesheet = """
@@ -458,7 +482,7 @@ class ImageMan(QMainWindow):
                 # We should not proceed with saving changes.
                 return
 
-            if len(set(new_tags)) != 5 or any(not t.strip() for t in new_tags):
+            if len(set(new_tags)) != NUM_TAGS or any(not t.strip() for t in new_tags):
                 QMessageBox.warning(self, 'Invalid Tags', 'Tags must be 5 unique, non-empty values.')
                 return
             self.tags = new_tags
@@ -479,7 +503,6 @@ class ImageMan(QMainWindow):
     def _toggle_thumbnail_view(self, checked):
         self.thumbnail_view_active = checked
         if checked:
-            self._rename_all_images(confirm=False)
             self.label.hide()
             self.filename_label.hide()
             self.scroll_area.show()

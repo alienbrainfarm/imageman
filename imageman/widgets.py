@@ -1,6 +1,8 @@
 from PyQt5.QtWidgets import QLabel, QListWidget
 from PyQt5.QtCore import Qt
 
+from imageman.constants import NUM_TAGS
+
 
 class ImageLabel(QLabel):
     def __init__(self, parent=None):
@@ -29,7 +31,7 @@ class ImageLabel(QLabel):
 
         if event.key() in key_actions:
             key_actions[event.key()]()
-        elif Qt.Key_1 <= event.key() <= Qt.Key_5:
+        elif Qt.Key_1 <= event.key() <= (Qt.Key_1 + NUM_TAGS - 1):
             idx = event.key() - Qt.Key_1
             if event.modifiers() & (Qt.ControlModifier | Qt.AltModifier):
                 parent.move_current_image_to_tag(idx)
@@ -67,7 +69,7 @@ class DragDropListWidget(QListWidget):
 
         if event.key() == Qt.Key_D:
             parent_window.delete_thumbnail_image(selected_image_name)
-        elif Qt.Key_1 <= event.key() <= Qt.Key_5:
+        elif Qt.Key_1 <= event.key() <= (Qt.Key_1 + NUM_TAGS - 1):
             idx = event.key() - Qt.Key_1
             if event.modifiers() & (Qt.ControlModifier | Qt.AltModifier):
                 parent_window.move_thumbnail_image_to_tag(selected_image_name, idx)

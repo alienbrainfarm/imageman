@@ -5,6 +5,8 @@ import pytest
 from imageman.main import ImageMan
 from PyQt5.QtWidgets import QApplication
 
+from conftest import create_dummy_image
+
 
 @pytest.fixture
 def temp_image_dir(tmp_path):
@@ -12,7 +14,7 @@ def temp_image_dir(tmp_path):
     img_dir = tmp_path / "images"
     img_dir.mkdir()
     for i in range(1, 4):
-        (img_dir / f"img{i}.jpg").write_bytes(b"fake image data")
+        create_dummy_image(img_dir / f"img{i}.jpg")
     return str(img_dir)
 
 
