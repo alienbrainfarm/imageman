@@ -1,2 +1,7 @@
 PyQt5>=5.15
 pytest
+pytest-qt
+PyInstaller
+pytest-timeout
+Pillow
+moviepy

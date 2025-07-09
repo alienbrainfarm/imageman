@@ -17,11 +17,7 @@ There are no questions asked here ESC will kill the program immediatly and "d" w
 
 ## Installation
 
-First run build_portable.bat to build a portable executable.
-
-You can build an installer yourself by running NSIS with the provided imageman_installer.nsi file.
-
- see: https://nsis.sourceforge.io/Main_Page
+Download and run the installer: [ImageManSetup.exe](ImageManSetup.exe)
 
 The installer will:
 - Install ImageMan to your Program Files.
@@ -31,4 +27,4 @@ The installer will:
 Once installed, you can launch ImageMan from the Start Menu, Desktop, or by right-clicking any folder and choosing 'Open with ImageMan'.
 
 ## Documentation
-See `docs/PRD.md` for the evolving product requirements.
+See `docs/PRD.md` for detailed features and product requirements.

@@ -16,8 +16,7 @@ Section "Install"
     SetOutPath "$INSTDIR"
     File "imageman\dist\ImageMan\ImageMan.exe"
     File "ImageMan.ico"
-    File /r "imageman\\dist\\ImageMan\\_internal"
-
+   
     ; Start Menu shortcut
     CreateShortCut "$SMPROGRAMS\ImageMan.lnk" "$INSTDIR\ImageMan.exe" "" "$INSTDIR\ImageMan.ico"
     ; Desktop shortcut (optional, ask user)

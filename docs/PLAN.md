@@ -17,12 +17,11 @@
 - Unit tests: file deletion, renaming logic
 
 ## 4. View Controls
-- Enlarge/shrink image with `q`/`a` keys
-- Support mouse resize
+- Enlarge/shrink image view with cursor up and down keys or mouse wheel
 - Unit tests: zoom logic
 
 ## 5. Application Controls
-- Close with window X
+- Close with window X or ESC
 - Unit tests: application exit
 
 ## 6. Configuration & Tag Management
@@ -35,6 +34,12 @@
 - Supported image formats
 - Update README and PRD
 
+
+
+## 9. Code Refactoring
+- Separated UI components (widgets, dialogs) into dedicated files (`widgets.py`, `dialogs.py`).
+- Centralized main application logic in `image_man_window.py`.
+- Simplified `main.py` to act as a minimal entry point.
 ---
 
 *After each step, run and extend unit tests to ensure stability.*
