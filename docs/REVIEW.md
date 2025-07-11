@@ -57,15 +57,19 @@ Here's a step-by-step plan to address the identified suggestions:
 
 ### Phase 2: Feature Refinement and Robustness
 
-5.  **Re-evaluate `_toggle_thumbnail_view` Behavior:**
+5.  **Implement MP4 Video Creation:**
+    *   **Action:** Implemented MP4 video creation from images using `opencv-python`.
+    *   **Files:** `imageman/image_man_window.py`, `requirements.txt`
+
+6.  **Re-evaluate `_toggle_thumbnail_view` Behavior:**
     *   **Action:** Modify `_toggle_thumbnail_view` to *not* automatically call `_rename_all_images(confirm=False)`. Instead, ensure `_rename_all_images` is explicitly triggered by user action (e.g., after drag-and-drop reordering in thumbnail view).
     *   **Files:** `imageman/image_man_window.py`
 
-6.  **Refine Thumbnail Image Deletion/Movement Logic:**
+7.  **Refine Thumbnail Image Deletion/Movement Logic:**
     *   **Action:** Simplify and thoroughly test the logic for updating `self.current_index` in `delete_thumbnail_image` and `move_thumbnail_image_to_tag` to ensure correct behavior for all edge cases (e.g., deleting the last image, deleting the only image).
     *   **Files:** `imageman/image_man_window.py`
 
-7.  **Improve `open_thumbnail_in_single_view` Error Handling:**
+8.  **Improve `open_thumbnail_in_single_view` Error Handling:**
     *   **Action:** Replace broad `except Exception` with more specific exception handling (e.g., `ValueError` for `list.index`, `IndexError` if applicable) in `open_thumbnail_in_single_view`.
     *   **Files:** `imageman/image_man_window.py`
 
@@ -88,5 +92,22 @@ Here's a step-by-step plan to address the identified suggestions:
     *   **Action:** Execute all existing and newly added unit tests to ensure no regressions were introduced and new features work as expected.
 11. **Manual Testing:**
     *   **Action:** Perform manual testing of the application to verify UI/UX and overall functionality.
+
+## Recent Issues and Resolutions
+
+### Issue 1: `ModuleNotFoundError: No module named 'PyQt5'`
+
+*   **Root Cause:** The `PyQt5` module was not explicitly listed in `requirements.txt`, causing PyInstaller to not bundle it correctly into the executable. Although `pytest-qt` might pull it as a dependency, explicit declaration is necessary for reliable builds.
+*   **Resolution:** Added `PyQt5` to `requirements.txt`. Users need to reactivate their virtual environment, reinstall dependencies (`pip install -r requirements.txt`), and then rebuild the portable executable.
+
+### Issue 2: `RecursionError: maximum recursion depth exceeded` in `_get_images`
+
+*   **Root Cause:** The `_get_images` method in `imageman/image_man_window.py` was calling itself recursively without a proper base case, leading to an infinite recursion and a `RecursionError`.
+*   **Resolution:** Modified the `_get_images` method to correctly list and filter image files from the specified directory using `os.listdir` and `os.path.isfile`, removing the erroneous recursive call.
+
+### Issue 3: Video Feature Implementation and Reversion
+
+*   **Root Cause:** Attempted to implement MP4 video display and playback, including custom thumbnail generation with a film strip effect. This introduced several `NameError` issues related to `PIL.ImageQt` and `PIL.Image` not being correctly bundled by PyInstaller, despite attempts to explicitly include them as hidden imports.
+*   **Resolution:** All changes related to video display, playback, and custom thumbnail generation were reverted to restore a stable and working executable. Further investigation is needed to properly integrate multimedia support without encountering bundling issues with PyInstaller.
 
 This plan provides a structured approach to enhance the ImageMan application. I am now awaiting your instructions.

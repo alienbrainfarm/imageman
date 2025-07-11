@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout, QLineEdit, QPushButton, QMessageBox, QWidget, QFileDialog,
     QListWidget, QListWidgetItem, QScrollArea, QApplication, QInputDialog
 )
-from PyQt5.QtGui import QPixmap, QIcon, QImage
+from PyQt5.QtGui import QPixmap, QIcon, QImage, QPainter, QPen, QColor
 from PyQt5.QtCore import Qt, QSize, QTimer
 
 from PIL import Image, ImageDraw, ImageOps, ImageQt
@@ -266,30 +266,15 @@ class ImageMan(QMainWindow):
 
     def _show_image(self):
         if not self.images:
-            QMessageBox.information(self, 'No Images', 'No images found in this directory.')
-            self.filename_label.setText('')
-            self.label.clear() # Clear any previous image
-            self.filename_label.setVisible(self.show_filenames)
+            self.label.clear()
+            self.filename_label.setText('No images in directory.')
             return
+
         img_name = self.images[self.current_index]
-        img_path = os.path.join(self.image_dir, img_name)
         self.filename_label.setText(img_name)
-        self.filename_label.setVisible(self.show_filenames)
-        pixmap = QPixmap()
-        if img_name.lower().endswith(SUPPORTED_VIDEO_FORMATS):
-            try:
-                vidcap = cv2.VideoCapture(img_path)
-                success,image = vidcap.read()
-                if success:
-                    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                    height, width, channel = image.shape
-                    bytesPerLine = 3 * width
-                    q_image = QImage(image.data, width, height, bytesPerLine, QImage.Format_RGB888)
-                    pixmap = QPixmap.fromImage(q_image)
-            except Exception as e:
-                print(f"Error creating video thumbnail: {e}")
-        else:
-            pixmap = QPixmap(img_path)
+        img_path = os.path.join(self.image_dir, img_name)
+
+        pixmap = QPixmap(img_path)
         if pixmap.isNull():
             QMessageBox.warning(self, 'Image Load Error', f'Cannot load image: {img_name}. It might be corrupted or an unsupported format.')
             self.label.clear() # Clear any previous image
@@ -306,12 +291,12 @@ class ImageMan(QMainWindow):
         scaled_pixmap = pixmap.scaled(scaled_w, scaled_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.label.setPixmap(scaled_pixmap)
 
+    
+
     def _get_images(self):
         supported = SUPPORTED_IMAGE_FORMATS
-        if self.include_videos:
-            supported += SUPPORTED_VIDEO_FORMATS
-        images = sorted([f for f in os.listdir(self.image_dir) if f.lower().endswith(supported)])
-        
+        images = [f for f in os.listdir(self.image_dir) if os.path.isfile(os.path.join(self.image_dir, f)) and f.lower().endswith(supported)]
+        images.sort()
         return images
 
     def _delete_current_image(self):
@@ -558,6 +543,59 @@ class ImageMan(QMainWindow):
         self.scroll_area.setWidget(self.thumbnail_list_widget)
         self.scroll_area.hide()
 
+    def _generate_video_thumbnail(self, video_path):
+        try:
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                return QPixmap()
+
+            # Try to read a frame
+            ret, frame = cap.read()
+            if not ret:
+                cap.release()
+                return QPixmap()
+
+            # Convert the frame to a QImage
+            h, w, ch = frame.shape
+            bytes_per_line = ch * w
+            q_image = QImage(frame.data, w, h, bytes_per_line, QImage.Format_RGB888).rgbSwapped()
+            pixmap = QPixmap.fromImage(q_image)
+
+            # Convert the frame to a PIL Image
+            frame_pil = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+            # Calculate scaling to fit the video frame within the thumbnail area
+            target_width = THUMBNAIL_ICON_SIZE[0] - 2 * FILM_STRIP_WIDTH
+            target_height = THUMBNAIL_ICON_SIZE[1]
+            frame_pil.thumbnail((target_width, target_height), Image.LANCZOS)
+
+            # Create a new PIL Image for the film strip background
+            film_strip_img = Image.new("RGB", THUMBNAIL_ICON_SIZE, FILM_STRIP_COLOR)
+
+            # Paste the scaled video frame onto the film strip background
+            paste_x = FILM_STRIP_WIDTH + (target_width - frame_pil.width) // 2
+            paste_y = (target_height - frame_pil.height) // 2
+            film_strip_img.paste(frame_pil, (paste_x, paste_y))
+
+            # Draw perforations on the left and right film strips
+            draw = ImageDraw.Draw(film_strip_img)
+            perforation_color = (0, 0, 0) # Black perforations
+            for y in range(0, THUMBNAIL_ICON_SIZE[1], PERFORATION_SPACING):
+                # Left perforations
+                draw.rectangle([0, y, FILM_STRIP_WIDTH, y + PERFORATION_SIZE], fill=perforation_color)
+                # Right perforations
+                draw.rectangle([THUMBNAIL_ICON_SIZE[0] - FILM_STRIP_WIDTH, y, THUMBNAIL_ICON_SIZE[0], y + PERFORATION_SIZE], fill=perforation_color)
+
+            # Convert PIL Image to QPixmap
+            q_image = ImageQt.toqpixmap(film_strip_img)
+            pixmap = QPixmap.fromImage(q_image)
+
+            cap.release()
+            return film_strip_img
+        except Exception as e:
+            print(f"Error generating video thumbnail for {video_path}: {e}")
+            return Image.new("RGB", THUMBNAIL_ICON_SIZE, (0, 0, 0)) # Return a black image on error
+
     def _toggle_thumbnail_view(self, checked):
         self.thumbnail_view_active = checked
         if checked:
@@ -565,6 +603,7 @@ class ImageMan(QMainWindow):
             self.filename_label.hide()
             self.scroll_area.show()
             self._update_thumbnail_view()
+            self.thumbnail_list_widget.setFocus()
         else:
             self.scroll_area.hide()
             self.label.show()
@@ -578,21 +617,14 @@ class ImageMan(QMainWindow):
         for image_name in self.images:
             item = QListWidgetItem()
             icon_path = os.path.join(self.image_dir, image_name)
-            pixmap = QPixmap(icon_path)
+            
             if image_name.lower().endswith(SUPPORTED_VIDEO_FORMATS):
-                # For videos, get the first frame and add a border
-                try:
-                    vidcap = cv2.VideoCapture(icon_path)
-                    success,image = vidcap.read()
-                    if success:
-                        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-                        image = Image.fromarray(image)
-                        image = ImageOps.expand(image, border=5, fill=VIDEO_THUMBNAIL_OUTLINE_COLOR)
-                        q_image = ImageQt.ImageQt(image)
-                        pixmap = QPixmap.fromImage(q_image)
-                except Exception as e:
-                    print(f"Error creating video thumbnail: {e}")
-                    pixmap = QPixmap() # Create an empty pixmap
+                pil_image = self._generate_video_thumbnail(icon_path)
+                pixmap = QPixmap.fromImage(ImageQt.toqpixmap(pil_image))
+            else:
+                pixmap = QPixmap(icon_path)
+                if not pixmap.isNull():
+                    pixmap = pixmap.scaled(THUMBNAIL_ICON_SIZE[0], THUMBNAIL_ICON_SIZE[1], Qt.KeepAspectRatio, Qt.SmoothTransformation)
 
             item.setIcon(QIcon(pixmap))
             item.setData(Qt.UserRole, image_name)
@@ -601,6 +633,9 @@ class ImageMan(QMainWindow):
             else:
                 item.setText("")
             self.thumbnail_list_widget.addItem(item)
+        if self.images:
+            self.thumbnail_list_widget.setCurrentRow(0)
+            self.thumbnail_list_widget.scrollToItem(self.thumbnail_list_widget.item(0))
 
     def _thumbnail_double_clicked(self, item):
         clicked_image_name = item.data(Qt.UserRole)
@@ -757,6 +792,8 @@ class ImageMan(QMainWindow):
             self._update_thumbnail_view()
         else:
             self._show_image()
+
+    
 
     def _create_slideshow_video(self):
         was_in_thumbnail_view = self.thumbnail_view_active

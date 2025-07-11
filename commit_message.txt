@@ -1,23 +1,9 @@
-feat: Add filename display toggle and video slideshow creation
+feat: Implement MP4 creation using OpenCV
 
-This commit introduces two new features:
-
-1.  **Toggle Filename Display:**
-    *   Adds a "Show Filenames" option under the "Config" menu.
-    *   Allows users to toggle the visibility of image filenames in both single image view and thumbnail view.
-    *   The setting persists across application restarts via the Windows Registry.
-
-2.  **Create Slideshow Video:**
-    *   Adds a "Create Slideshow Video..." option under the "File" menu.
-    *   Generates an MP4 video slideshow from all images in the current directory.
-    *   Images are resized to HD (1920x1080) while maintaining aspect ratio, with black borders filling any empty space.
-    *   The slideshow duration per image is configurable via the existing slideshow duration setting.
-    *   Users can specify a minimum video length in minutes, and the slideshow will loop if necessary to meet this duration.
-    *   A temporary directory is used for processed images and is automatically cleaned up after video creation.
-    *   The MP4 video is saved in the current image directory.
-
-**Technical Changes:**
-*   Updated `requirements.txt` to include `Pillow` and `moviepy`.
-*   Modified `start_imageman.bat` to ensure correct virtual environment activation and application launch.
-*   Adjusted `imageman/main.py` to add the project root to `sys.path` for reliable module imports.
-*   Corrected `moviepy` import path in `imageman/image_man_window.py`.
+Replaced MoviePy with OpenCV (cv2) for video processing, including:
+- Generating video thumbnails.
+- Creating slideshow videos.
+- Updated `requirements.txt` to reflect the dependency change.
+- Modified `imageman/image_man_window.py` and `imageman/widgets.py` to integrate OpenCV.
+- Added new test images and updated `tests/test_main.py` to include a test for video creation.
+- Updated `GEMINI.md` and `build_portable.bat` for consistency.

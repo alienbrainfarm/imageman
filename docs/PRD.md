@@ -45,6 +45,8 @@ A fast, keyboard-driven Windows image viewer for efficiently managing images in 
   - **Arrow Key Navigation:** Use the left and right arrow keys to navigate between images.
 - **Configuration:**
   - **Configure Tags:** Access the "Configure Tags" dialog from the "Config" menu to customize your tags and slideshow duration.
+- **MP4 Video Creation:**
+  - Added a menu option to create an MP4 video from the current set of images, with configurable minimum video length.
   
 ---
 *Refine this document as requirements evolve.*
