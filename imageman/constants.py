@@ -2,7 +2,15 @@
 NUM_TAGS = 5
 RECENT_DIRS_LIMIT = 5
 DEFAULT_SLIDESHOW_DURATION = 3.0
-SUPPORTED_IMAGE_FORMATS = ('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tif', '.tiff')
+SUPPORTED_IMAGE_FORMATS = ('.png', '.jpg', '.jpeg', '.bmp', '.gif', '.tif', '.tiff', '.webp')
 FILENAME_LABEL_HEIGHT = 32
 WINDOW_MARGIN = 20
 AVAILABLE_HEIGHT_OFFSET = 52
+DEFAULT_TAGS = ['tag1', 'tag2', 'tag3', 'tag4', 'tag5']
+REGISTRY_KEY = r"Software\ImageMan"
+THUMBNAIL_ICON_SIZE = (128, 128)
+VIDEO_TARGET_RESOLUTION = (1920, 1080)
+VIDEO_FPS = 24
+SUPPORTED_VIDEO_FORMATS = ('.mp4',)
+VIDEO_THUMBNAIL_OUTLINE_COLOR = (0, 0, 255)
+DEFAULT_INCLUDE_VIDEOS = True

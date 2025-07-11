@@ -27,16 +27,15 @@ class ImageLabel(QLabel):
             Qt.Key_Down: parent.zoom_out,
             Qt.Key_Escape: parent.close,
             Qt.Key_Space: parent.toggle_slideshow,
+            Qt.Key_T: parent.toggle_thumbnail_view_and_refresh,
+            Qt.Key_N: parent.toggle_filename_display,
         }
 
         if event.key() in key_actions:
             key_actions[event.key()]()
         elif Qt.Key_1 <= event.key() <= (Qt.Key_1 + NUM_TAGS - 1):
             idx = event.key() - Qt.Key_1
-            if event.modifiers() & (Qt.ControlModifier | Qt.AltModifier):
-                parent.move_current_image_to_tag(idx)
-            else:
-                parent.rename_current_image(parent.tags[idx])
+            parent.move_current_image_to_tag(idx)
         else:
             super().keyPressEvent(event)
 
@@ -71,12 +70,13 @@ class DragDropListWidget(QListWidget):
             parent_window.delete_thumbnail_image(selected_image_name)
         elif Qt.Key_1 <= event.key() <= (Qt.Key_1 + NUM_TAGS - 1):
             idx = event.key() - Qt.Key_1
-            if event.modifiers() & (Qt.ControlModifier | Qt.AltModifier):
-                parent_window.move_thumbnail_image_to_tag(selected_image_name, idx)
-            else:
-                parent_window.rename_thumbnail_image(selected_image_name, parent_window.tags[idx])
+            parent_window.move_thumbnail_image_to_tag(selected_image_name, idx)
         elif event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
             parent_window.open_thumbnail_in_single_view(selected_image_name)
+        elif event.key() == Qt.Key_T:
+            parent_window.toggle_thumbnail_view_and_refresh()
+        elif event.key() == Qt.Key_N:
+            parent_window.toggle_filename_display()
         else:
             super().keyPressEvent(event)
 

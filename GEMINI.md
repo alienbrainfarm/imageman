@@ -34,7 +34,7 @@ ImageMan is a fast, keyboard-driven Windows image viewer designed for efficient 
 - **Build Portable Executable:** `build_portable.bat`
 
 ## 6. Test Commands
-- **Run Tests:** `pytest` (from the project root, after activating the virtual environment)
+- **Run Tests:** `pytest` (from the project root, after activating the virtual environment: `.\venv\Scripts\activate`)
 
 ## 7. Project-Specific Notes & Conventions
 - **Configuration Storage:** Application settings (recent directories, tags, slideshow duration) are stored in the Windows Registry under `HKEY_CURRENT_USER\Software\ImageMan`.
